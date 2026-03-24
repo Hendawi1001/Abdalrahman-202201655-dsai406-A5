@@ -1,0 +1,4 @@
+[core]
+    remote = origin
+['remote "origin"']
+    url = https://dagshub.com/Hendawi1001/Abdalrahman-202201655-dsai406-A5.dvc
