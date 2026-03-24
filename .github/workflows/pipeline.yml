@@ -6,6 +6,7 @@ on:
   workflow_dispatch:
 
 jobs:
+
   validate:
     name: Validate Model
     runs-on: ubuntu-latest
@@ -34,7 +35,7 @@ jobs:
       - name: Verify model_info.txt was created
         run: |
           if [ ! -f model_info.txt ]; then
-            echo "model_info.txt not found — training step must have failed."
+            echo "model_info.txt not found - training step must have failed."
             exit 1
           fi
           echo "Run ID: $(cat model_info.txt)"
@@ -72,7 +73,6 @@ jobs:
 
       - name: Display Run ID
         run: echo "Deploying Run ID: $(cat model_info.txt)"
-
 
       - name: Check accuracy threshold
         run: python check_threshold.py
