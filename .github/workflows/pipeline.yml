@@ -6,7 +6,6 @@ on:
   workflow_dispatch:
 
 jobs:
-
   validate:
     name: Validate Model
     runs-on: ubuntu-latest
@@ -22,7 +21,6 @@ jobs:
 
       - name: Install dependencies
         run: pip install mlflow dvc scikit-learn pandas
-
 
       - name: Pull data with DVC
         run: dvc pull
@@ -46,7 +44,6 @@ jobs:
           name: model-info
           path: model_info.txt
           retention-days: 7
-
 
   deploy:
     name: Deploy Model
