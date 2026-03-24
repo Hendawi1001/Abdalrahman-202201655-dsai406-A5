@@ -23,9 +23,6 @@ jobs:
           python -m pip install --upgrade pip
           pip install dvc mlflow 
 
-      - name: Pull Data with DVC
-        run: dvc pull || echo "No DVC remote configured, skipping pull for mock run."
-
       - name: Train Model
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
