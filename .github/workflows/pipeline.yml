@@ -21,7 +21,13 @@ jobs:
           python-version: "3.10"
 
       - name: Install dependencies
-        run: pip install mlflow dvc scikit-learn pandas
+        run: pip install mlflow dvc dvc-s3 scikit-learn pandas
+
+      - name: Configure DVC remote credentials
+        run: |
+          dvc remote modify origin --local auth basic
+          dvc remote modify origin --local user ${{ secrets.DVC_REMOTE_USER }}
+          dvc remote modify origin --local password ${{ secrets.DVC_REMOTE_PASSWORD }}
 
       - name: Pull data with DVC
         run: dvc pull
@@ -29,6 +35,8 @@ jobs:
       - name: Train model and log to MLflow
         env:
           MLFLOW_TRACKING_URI: "${{ secrets.MLFLOW_TRACKING_URI }}"
+          MLFLOW_TRACKING_USERNAME: "${{ secrets.DVC_REMOTE_USER }}"
+          MLFLOW_TRACKING_PASSWORD: "${{ secrets.DVC_REMOTE_PASSWORD }}"
         run: python train.py
 
       - name: Verify model_info.txt was created
@@ -69,13 +77,11 @@ jobs:
           name: model-info
           path: .
 
-      - name: Display Run ID
-        run: |
-          echo "Deploying Run ID: $(cat model_info.txt)"
-
       - name: Check accuracy threshold
         env:
           MLFLOW_TRACKING_URI: "${{ secrets.MLFLOW_TRACKING_URI }}"
+          MLFLOW_TRACKING_USERNAME: "${{ secrets.DVC_REMOTE_USER }}"
+          MLFLOW_TRACKING_PASSWORD: "${{ secrets.DVC_REMOTE_PASSWORD }}"
         run: python check_threshold.py
 
       - name: Mock Docker build
