@@ -1,71 +1,91 @@
-name: Model Pipeline
+name: ML Validate and Deploy Pipeline
 
 on:
   push:
-    branches: [ main ]
+    branches: [main]
   workflow_dispatch:
 
 jobs:
   validate:
-    name: Train and Validate Model
+    name: Validate Model
     runs-on: ubuntu-latest
+
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: Install Dependencies
+      - name: Install dependencies
         run: |
-          python -m pip install --upgrade pip
-          pip install dvc mlflow 
+          pip install mlflow dvc
 
-      - name: Pull Data with DVC
-        run: dvc pull || echo "No DVC remote configured, skipping pull for mock run."
-
-      - name: Train Model
+      - name: Pull data with DVC
+        run: dvc pull
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-        run: python train.py
 
-      - name: Persist Run ID Artifact
+      - name: Train model and log to MLflow
+        run: python train.py
+        env:
+          MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
+
+      - name: Verify model_info.txt was created
+        run: |
+          if [ ! -f model_info.txt ]; then
+            echo "model_info.txt not found — training step must have failed."
+            exit 1
+          fi
+          echo "Run ID: $(cat model_info.txt)"
+
+      - name: Upload model_info artifact
         uses: actions/upload-artifact@v4
         with:
-          name: model-run-info
+          name: model-info
           path: model_info.txt
-          retention-days: 1
+          retention-days: 7
+
 
   deploy:
-    name: Deploy to Docker
-    needs: validate
+    name: Deploy Model
     runs-on: ubuntu-latest
+    needs: validate         
+
     steps:
-      - name: Checkout Code
+      - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: "3.10"
 
-      - name: Install MLflow
+      - name: Install dependencies
         run: pip install mlflow
 
-      - name: Download Run ID Artifact
+      - name: Download model_info artifact
         uses: actions/download-artifact@v4
         with:
-          name: model-run-info
+          name: model-info
+          path: .
 
-      - name: Check Accuracy Threshold
+      - name: Display Run ID
+        run: |
+          echo "Deploying Run ID: $(cat model_info.txt)"
+
+      - name: Check accuracy threshold
+        run: python check_threshold.py
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-        run: python check_threshold.py
 
-      - name: Mock Docker Build
+      - name: Mock Docker build
         run: |
-          RUN_ID=$(cat model_info.txt)
-          echo "Building Docker image for Run ID: $RUN_ID"
-          docker build --build-arg RUN_ID=$RUN_ID -t my-classifier:latest .
+          echo "Building Docker image for Run ID: $(cat model_info.txt)"
+          docker build \
+            --build-arg RUN_ID=$(cat model_info.txt) \
+            -t ml-model:$(cat model_info.txt) \
+            .
+          echo "Docker image built successfully."
