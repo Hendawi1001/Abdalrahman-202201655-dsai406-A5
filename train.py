@@ -19,7 +19,7 @@ if __name__ == "__main__":
     )
 
     with mlflow.start_run() as run:
-        model = RandomForestClassifier(n_estimators=100, random_state=42)
+        model = RandomForestClassifier(n_estimators=1, max_depth=1, random_state=42)
         model.fit(X_train, y_train)
 
         accuracy = accuracy_score(y_test, model.predict(X_test))
