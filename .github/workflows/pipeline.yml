@@ -22,6 +22,7 @@ jobs:
       - name: Install dependencies
         run: pip install mlflow dvc scikit-learn pandas
 
+
       - name: Pull data with DVC
         run: dvc pull
 
@@ -44,6 +45,7 @@ jobs:
           name: model-info
           path: model_info.txt
           retention-days: 7
+
 
   deploy:
     name: Deploy Model
@@ -71,11 +73,12 @@ jobs:
       - name: Display Run ID
         run: echo "Deploying Run ID: $(cat model_info.txt)"
 
+
       - name: Check accuracy threshold
         run: python check_threshold.py
         env:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
-          
+
       - name: Mock Docker build
         run: |
           echo "Building Docker image for Run ID: $(cat model_info.txt)"
